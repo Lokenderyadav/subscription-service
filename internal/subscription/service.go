@@ -45,6 +45,10 @@ func (s *Service) Cancel(ctx context.Context, id string) error {
 		return ErrNotFound
 	}
 
+	if sub.Status == "cancelled" {
+		return nil
+	}
+
 	sub.Status = "cancelled"
 
 	return s.repo.Update(ctx, sub)
