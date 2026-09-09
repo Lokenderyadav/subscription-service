@@ -53,3 +53,18 @@ func (s *Service) Cancel(ctx context.Context, id string) error {
 
 	return s.repo.Update(ctx, sub)
 }
+
+func (s *Service) Pause(ctx context.Context, id string) error {
+	sub, exists := s.repo.Get(ctx, id)
+	if !exists {
+		return ErrNotFound
+	}
+
+	if sub.Status == "paused" {
+		return nil
+	}
+
+	sub.Status = "paused"
+
+	return s.repo.Update(ctx, sub)
+}
