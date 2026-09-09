@@ -31,5 +31,9 @@ func (s *Service) Create(ctx context.Context, sub Subscription) error {
 }
 
 func (s *Service) Get(ctx context.Context, id string) (Subscription, bool) {
+	if id == "" {
+		return Subscription{}, false
+	}
+
 	return s.repo.Get(ctx, id)
 }
