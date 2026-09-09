@@ -136,3 +136,62 @@ func TestCreateSubscriptionCancelledContext(t *testing.T) {
 		t.Fatal("expected error for cancelled context")
 	}
 }
+
+func TestCancelSubscription(t *testing.T) {
+	repo := NewMemoryRepository()
+	service := NewService(repo)
+	ctx := context.Background()
+
+	sub := Subscription{
+		ID:     "sub-3001",
+		UserID: "user-700",
+		Plan:   "premium",
+	}
+
+	if err := service.Create(ctx, sub); err != nil {
+		t.Fatalf("create failed: %v", err)
+	}
+
+	if err := service.Cancel(ctx, "sub-3001"); err != nil {
+		t.Fatalf("cancel failed: %v", err)
+	}
+
+	got, exists := service.Get(ctx, "sub-3001")
+	if !exists {
+		t.Fatal("expected subscription to exist")
+	}
+
+	if got.Status != "cancelled" {
+		t.Fatalf("expected cancelled status, got %s", got.Status)
+	}
+}
+
+func TestCancelSubscriptionAlreadyCancelled(t *testing.T) {
+	repo := NewMemoryRepository()
+	service := NewService(repo)
+	ctx := context.Background()
+
+	sub := Subscription{
+		ID:     "sub-4001",
+		UserID: "user-800",
+		Plan:   "premium",
+		Status: "cancelled",
+	}
+
+	if err := repo.Create(ctx, sub); err != nil {
+		t.Fatalf("setup failed: %v", err)
+	}
+
+	if err := service.Cancel(ctx, "sub-4001"); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	got, exists := service.Get(ctx, "sub-4001")
+	if !exists {
+		t.Fatal("expected subscription to exist")
+	}
+
+	if got.Status != "cancelled" {
+		t.Fatalf("expected cancelled status, got %s", got.Status)
+	}
+}

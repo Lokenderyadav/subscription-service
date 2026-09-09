@@ -2,6 +2,7 @@ package subscription
 
 import (
 	"context"
+	"errors"
 	"sync"
 )
 
@@ -46,4 +47,22 @@ func (r *MemoryRepository) Get(ctx context.Context, id string) (Subscription, bo
 
 	sub, exists := r.subscriptions[id]
 	return sub, exists
+}
+
+func (r *MemoryRepository) Update(ctx context.Context, sub Subscription) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if _, exists := r.subscriptions[sub.ID]; !exists {
+		return errors.New("subscription not found")
+	}
+
+	r.subscriptions[sub.ID] = sub
+	return nil
 }

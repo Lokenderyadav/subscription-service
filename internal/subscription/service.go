@@ -8,6 +8,7 @@ import (
 var (
 	ErrInvalidSubscription = errors.New("invalid subscription")
 	ErrDuplicateID         = errors.New("subscription already exists")
+	ErrNotFound            = errors.New("subscription not found")
 )
 
 type Service struct {
@@ -36,4 +37,19 @@ func (s *Service) Get(ctx context.Context, id string) (Subscription, bool) {
 	}
 
 	return s.repo.Get(ctx, id)
+}
+
+func (s *Service) Cancel(ctx context.Context, id string) error {
+	sub, exists := s.repo.Get(ctx, id)
+	if !exists {
+		return ErrNotFound
+	}
+
+	if sub.Status == "cancelled" {
+		return nil
+	}
+
+	sub.Status = "cancelled"
+
+	return s.repo.Update(ctx, sub)
 }
