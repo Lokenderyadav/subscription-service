@@ -195,3 +195,97 @@ func TestCancelSubscriptionAlreadyCancelled(t *testing.T) {
 		t.Fatalf("expected cancelled status, got %s", got.Status)
 	}
 }
+
+func TestPauseSubscription(t *testing.T) {
+	repo := NewMemoryRepository()
+	service := NewService(repo)
+	ctx := context.Background()
+
+	sub := Subscription{
+		ID:     "sub-5001",
+		UserID: "user-900",
+		Plan:   "premium",
+	}
+
+	if err := service.Create(ctx, sub); err != nil {
+		t.Fatalf("create failed: %v", err)
+	}
+
+	if err := service.Pause(ctx, "sub-5001"); err != nil {
+		t.Fatalf("pause failed: %v", err)
+	}
+
+	got, exists := service.Get(ctx, "sub-5001")
+	if !exists {
+		t.Fatal("expected subscription to exist")
+	}
+
+	if got.Status != "paused" {
+		t.Fatalf("expected paused status, got %s", got.Status)
+	}
+}
+
+func TestPauseSubscriptionAlreadyPaused(t *testing.T) {
+	repo := NewMemoryRepository()
+	service := NewService(repo)
+	ctx := context.Background()
+
+	sub := Subscription{
+		ID:     "sub-5002",
+		UserID: "user-901",
+		Plan:   "premium",
+		Status: "paused",
+	}
+
+	if err := repo.Create(ctx, sub); err != nil {
+		t.Fatalf("setup failed: %v", err)
+	}
+
+	if err := service.Pause(ctx, "sub-5002"); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+}
+
+func TestPauseSubscriptionNotFound(t *testing.T) {
+	repo := NewMemoryRepository()
+	service := NewService(repo)
+	ctx := context.Background()
+
+	err := service.Pause(ctx, "missing-sub")
+
+	if err != ErrNotFound {
+		t.Fatalf("expected %v, got %v", ErrNotFound, err)
+	}
+}
+
+func TestPauseCancelledSubscription(t *testing.T) {
+	repo := NewMemoryRepository()
+	service := NewService(repo)
+	ctx := context.Background()
+
+	sub := Subscription{
+		ID:     "sub-5003",
+		UserID: "user-902",
+		Plan:   "premium",
+		Status: "cancelled",
+	}
+
+	if err := repo.Create(ctx, sub); err != nil {
+		t.Fatalf("setup failed: %v", err)
+	}
+
+	err := service.Pause(ctx, "sub-5003")
+
+	if err == nil {
+		t.Fatal("expected error when pausing cancelled subscription")
+	}
+
+	got, exists := service.Get(ctx, "sub-5003")
+	if !exists {
+		t.Fatal("expected subscription to exist")
+	}
+
+	if got.Status != "cancelled" {
+		t.Fatalf("expected status to remain cancelled, got %s", got.Status)
+	}
+}
