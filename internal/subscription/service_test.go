@@ -257,3 +257,35 @@ func TestPauseSubscriptionNotFound(t *testing.T) {
 		t.Fatalf("expected %v, got %v", ErrNotFound, err)
 	}
 }
+
+func TestPauseCancelledSubscription(t *testing.T) {
+	repo := NewMemoryRepository()
+	service := NewService(repo)
+	ctx := context.Background()
+
+	sub := Subscription{
+		ID:     "sub-5003",
+		UserID: "user-902",
+		Plan:   "premium",
+		Status: "cancelled",
+	}
+
+	if err := repo.Create(ctx, sub); err != nil {
+		t.Fatalf("setup failed: %v", err)
+	}
+
+	err := service.Pause(ctx, "sub-5003")
+
+	if err == nil {
+		t.Fatal("expected error when pausing cancelled subscription")
+	}
+
+	got, exists := service.Get(ctx, "sub-5003")
+	if !exists {
+		t.Fatal("expected subscription to exist")
+	}
+
+	if got.Status != "cancelled" {
+		t.Fatalf("expected status to remain cancelled, got %s", got.Status)
+	}
+}

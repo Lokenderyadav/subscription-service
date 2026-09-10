@@ -60,6 +60,10 @@ func (s *Service) Pause(ctx context.Context, id string) error {
 		return ErrNotFound
 	}
 
+	if sub.Status == "cancelled" {
+		return errors.New("cancelled subscription cannot be paused")
+	}
+
 	if sub.Status == "paused" {
 		return nil
 	}
